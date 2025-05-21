@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">BitcoinWidget</string>
+    <string name="notification_channel_id">price_change_channel</string>
+    <string name="notification_channel_name">Price Change Alerts</string>
+    <string name="price_increased">BTC Price Increased by %s%%</string>
+    <string name="price_decreased">BTC Price Decreased by %s%%</string>
+</resources>
