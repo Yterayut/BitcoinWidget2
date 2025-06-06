@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Crypto Fear & Greed Index"
+        android:text="Crypto Fear and Greed Index"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:layout_gravity="center"/>
