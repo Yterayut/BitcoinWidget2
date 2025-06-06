@@ -38,11 +38,6 @@
             android:exported="false"
             android:theme="@android:style/Theme.Dialog" />
 
-        <activity
-            android:name="com.example.bitcoinwidget.RefreshIntervalActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" />
-
     </application>
 
 </manifest>
