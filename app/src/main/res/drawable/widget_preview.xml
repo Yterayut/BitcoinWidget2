@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="110dp"
+    android:height="40dp"
+    android:viewportWidth="110"
+    android:viewportHeight="40">
+    
+    <!-- Widget Background -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M0,0h110v40h-110z"/>
+    
+    <!-- Bitcoin Icon -->
+    <path
+        android:fillColor="#F7931E"
+        android:pathData="M10,10m-8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0"/>
+    
+    <!-- Price Text Placeholder -->
+    <path
+        android:fillColor="#00FF00"
+        android:pathData="M25,15h60v8h-60z"/>
+    
+    <!-- Time Text Placeholder -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M25,25h50v6h-50z"/>
+    
+</vector>

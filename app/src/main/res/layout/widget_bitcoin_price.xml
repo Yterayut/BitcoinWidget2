@@ -1,10 +1,12 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="8dp"
     android:background="#000000"
     android:orientation="vertical"
-    android:gravity="center">
+    android:gravity="center"
+    android:clickable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -43,7 +45,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Binance @ Thu 13:13"
+        android:text="Binance @ Thu 13:41"
         android:textSize="12sp"
         android:textColor="#FFFFFF"
         android:ellipsize="end"
