@@ -10,8 +10,6 @@ import android.os.Build
 import android.widget.RemoteViews
 import java.text.SimpleDateFormat
 import java.util.*
-import java.text.SimpleDateFormat
-import java.util.*
 
 class BitcoinPriceWidget : AppWidgetProvider() {
     
