@@ -14,11 +14,22 @@ class PopupActivity : Activity() {
 
         // ตั้งค่าข้อมูล (จำลองข้อมูลที่เปลี่ยนแปลงตามเวลา)
         val currentMinute = Calendar.getInstance().get(Calendar.MINUTE)
-        val fearGreedValue = 40 + (currentMinute % 40) // วนระหว่าง 40-80
-        val mvrv = 2.0 + (currentMinute % 10) * 0.05 // วนระหว่าง 2.0-2.5
+        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         
+        // Fear & Greed Index (40-80)
+        val fearGreedValue = 40 + (currentMinute % 40)
         findViewById<TextView>(R.id.fear_greed_value)?.text = fearGreedValue.toString()
+        
+        // MVRV Ratio (2.0-2.5)
+        val mvrv = 2.0 + (currentMinute % 10) * 0.05
         findViewById<TextView>(R.id.mvrv_value)?.text = String.format("%.2f", mvrv)
+        
+        // Mining Fees (1-5 sat/vB)
+        val baseFee = 1 + (currentHour % 5)
+        findViewById<TextView>(R.id.fee_low)?.text = baseFee.toString()
+        findViewById<TextView>(R.id.fee_medium)?.text = (baseFee + 1).toString()
+        findViewById<TextView>(R.id.fee_high)?.text = (baseFee + 2).toString()
+        findViewById<TextView>(R.id.fee_urgent)?.text = (baseFee + 3).toString()
 
         // ปิด Activity เมื่อกดนอกพื้นที่
         setFinishOnTouchOutside(true)
