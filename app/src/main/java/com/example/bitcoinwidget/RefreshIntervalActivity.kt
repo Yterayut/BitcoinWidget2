@@ -22,15 +22,26 @@ class RefreshIntervalActivity : Activity() {
 
         val radioGroup = findViewById<RadioGroup>(R.id.interval_radio_group)
         val confirmButton = findViewById<Button>(R.id.confirm_button)
+        val cancelButton = findViewById<Button>(R.id.cancel_button)
+
+        // Set default selection to 5 minutes
+        radioGroup.check(R.id.interval_5min)
+
+        cancelButton.setOnClickListener {
+            setResult(RESULT_CANCELED)
+            finish()
+        }
 
         confirmButton.setOnClickListener {
             val selectedIntervalId = radioGroup.checkedRadioButtonId
             val intervalMillis = when (selectedIntervalId) {
-                R.id.interval_1min -> 60_000L         // 1 นาที
-                R.id.interval_2min -> 2 * 60_000L     // 2 นาที
-                R.id.interval_5min -> 5 * 60_000L     // 5 นาที
-                R.id.interval_10min -> 10 * 60_000L   // 10 นาที
-                else -> 30 * 60_000L                  // 30 นาที (default)
+                R.id.interval_1min -> 60_000L           // 1 minute
+                R.id.interval_5min -> 5 * 60_000L       // 5 minutes  
+                R.id.interval_10min -> 10 * 60_000L     // 10 minutes
+                R.id.interval_20min -> 20 * 60_000L     // 20 minutes
+                R.id.interval_30min -> 30 * 60_000L     // 30 minutes
+                R.id.interval_1hour -> 60 * 60_000L     // 1 hour
+                else -> 5 * 60_000L                     // 5 minutes (default)
             }
 
             // บันทึกค่า interval ลง SharedPreferences

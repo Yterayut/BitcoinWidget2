@@ -37,9 +37,18 @@ class MainActivity : Activity() {
             setOnClickListener { updateAllWidgets() }
         }
         
+        val settingsButton = Button(this).apply {
+            text = "Refresh Interval Settings"
+            setOnClickListener { 
+                val intent = Intent(this@MainActivity, RefreshIntervalActivity::class.java)
+                startActivity(intent)
+            }
+        }
+        
         layout.addView(titleText)
         layout.addView(infoText)
         layout.addView(updateButton)
+        layout.addView(settingsButton)
         
         setContentView(layout)
     }
