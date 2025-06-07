@@ -58,10 +58,8 @@ class MainActivity : Activity() {
         val thisWidget = ComponentName(this, BitcoinPriceWidget::class.java)
         val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
         
-        val intent = Intent(this, BitcoinPriceWidget::class.java).apply {
-            action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, allWidgetIds)
+        for (widgetId in allWidgetIds) {
+            BitcoinPriceWidget.updateWidget(this, appWidgetManager, widgetId)
         }
-        sendBroadcast(intent)
     }
 }

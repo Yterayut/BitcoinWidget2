@@ -48,12 +48,9 @@ class RefreshIntervalActivity : Activity() {
             val prefs = getSharedPreferences("WidgetPrefs", Context.MODE_PRIVATE)
             prefs.edit().putLong("interval_$appWidgetId", intervalMillis).apply()
 
-            // อัปเดต Widget ผ่าน Intent
+            // อัปเดต Widget ทันทีด้วย interval ใหม่
             val appWidgetManager = AppWidgetManager.getInstance(this)
-            val intent = Intent(this, BitcoinPriceWidget::class.java)
-            intent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
-            sendBroadcast(intent)
+            BitcoinPriceWidget.updateWidget(this, appWidgetManager, appWidgetId)
 
             // ส่งผลลัพธ์กลับ
             val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
