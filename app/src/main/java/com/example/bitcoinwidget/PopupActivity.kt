@@ -319,21 +319,18 @@ class PopupActivity : Activity() {
             findViewById<TextView>(R.id.mvrv_value)?.text = "${String.format("%.2f", it)} - ${getMvrvZScoreStatus(it.toDouble())}"
         }
 
+        // Display cached fees with proper sat/vB unit
         fastestFee?.let {
-            findViewById<TextView>(R.id.fee_urgent)?.text = "$it sat/"
+            findViewById<TextView>(R.id.fee_urgent)?.text = "$it sat/vB"
+            findViewById<TextView>(R.id.fee_high)?.text = "$it sat/vB"
         }
 
         halfHourFee?.let {
-            findViewById<TextView>(R.id.fee_medium)?.text = "$it sat/"
+            findViewById<TextView>(R.id.fee_medium)?.text = "$it sat/vB"
         }
 
         hourFee?.let {
-            findViewById<TextView>(R.id.fee_low)?.text = "$it sat/"
-        }
-
-        // Also update fee_high (fallback to fastest fee)
-        fastestFee?.let {
-            findViewById<TextView>(R.id.fee_high)?.text = "$it sat/"
+            findViewById<TextView>(R.id.fee_low)?.text = "$it sat/vB"
         }
 
         // Display Fear & Greed Index
@@ -369,23 +366,25 @@ class PopupActivity : Activity() {
             findViewById<TextView>(R.id.mvrv_value)?.text = "${String.format("%.2f", zScore)} - $status"
         }
 
-        // Update Mining Fees
+        // Update Mining Fees with better labeling to match mempool.space
         bitcoinData.hourFee?.let { fee ->
-            findViewById<TextView>(R.id.fee_low)?.text = "$fee sat/"
+            // Low priority / Economy fee (~1 hour)
+            findViewById<TextView>(R.id.fee_low)?.text = "$fee sat/vB"
         }
 
         bitcoinData.halfHourFee?.let { fee ->
-            findViewById<TextView>(R.id.fee_medium)?.text = "$fee sat/"
+            // Standard fee (~30 minutes)
+            findViewById<TextView>(R.id.fee_medium)?.text = "$fee sat/vB"
         }
 
         bitcoinData.fastestFee?.let { fee ->
-            findViewById<TextView>(R.id.fee_urgent)?.text = "$fee sat/"
+            // High priority / Fast fee (next block)
+            findViewById<TextView>(R.id.fee_high)?.text = "$fee sat/vB"
+            // Also update urgent (same as fastest for now)
+            findViewById<TextView>(R.id.fee_urgent)?.text = "$fee sat/vB"
         }
 
-        // Also update fee_high if available (fallback to fastest fee)
-        bitcoinData.fastestFee?.let { fee ->
-            findViewById<TextView>(R.id.fee_high)?.text = "$fee sat/"
-        }
+        Log.d("PopupActivity", "💳 Updated fees: Low=${bitcoinData.hourFee}, Medium=${bitcoinData.halfHourFee}, Fast=${bitcoinData.fastestFee}")
 
         // Update Real Fear & Greed Index
         bitcoinData.fearGreedIndex?.let { index ->

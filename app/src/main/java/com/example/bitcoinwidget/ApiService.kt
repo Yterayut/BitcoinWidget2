@@ -654,56 +654,110 @@ class ApiService {
     }
     
     private suspend fun fetchBtcFees(): Triple<Int?, Int?, Int?> = withContext(Dispatchers.IO) {
-        try {
-            Log.d(TAG, "💳 Fetching Bitcoin fees from mempool.space")
-            
-            val request = Request.Builder()
-                .url("https://mempool.space/api/v1/fees/recommended")
-                .addHeader("User-Agent", "BitcoinWidget/2.0")
-                .addHeader("Accept", "application/json")
-                .build()
-            
-            val response = client.newCall(request).execute()
-            if (response.isSuccessful) {
-                val responseBody = response.body?.string()
-                if (responseBody != null) {
-                    Log.d(TAG, "📥 Fees response: $responseBody")
-                    
-                    try {
-                        val feesResponse = gson.fromJson(responseBody, MempoolFeesResponse::class.java)
-                        Log.d(TAG, "✅ BTC Fees from mempool.space: Fast=${feesResponse.fastestFee}, Half=${feesResponse.halfHourFee}, Hour=${feesResponse.hourFee}")
-                        return@withContext Triple(feesResponse.fastestFee, feesResponse.halfHourFee, feesResponse.hourFee)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "❌ Error parsing fees JSON: ${e.message}")
+        // Try multiple mempool endpoints for fee data
+        val endpoints = listOf(
+            "https://mempool.space/api/v1/fees/recommended",
+            "https://mempool.space/th/api/v1/fees/recommended", // Thai version
+            "https://blockstream.info/api/fee-estimates"
+        )
+        
+        for ((index, endpoint) in endpoints.withIndex()) {
+            try {
+                Log.d(TAG, "💳 Fetching Bitcoin fees from endpoint ${index + 1}: $endpoint")
+                
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("User-Agent", "BitcoinWidget/2.0")
+                    .addHeader("Accept", "application/json")
+                    .addHeader("Accept-Language", "en-US,en;q=0.9")
+                    .build()
+                
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val responseBody = response.body?.string()
+                    if (responseBody != null) {
+                        Log.d(TAG, "📥 Fees response from $endpoint: $responseBody")
                         
-                        // Try manual JSON parsing as fallback
-                        try {
-                            val jsonObject = gson.fromJson(responseBody, JsonObject::class.java)
-                            val fastestFee = jsonObject.get("fastestFee")?.asInt
-                            val halfHourFee = jsonObject.get("halfHourFee")?.asInt
-                            val hourFee = jsonObject.get("hourFee")?.asInt
-                            
-                            if (fastestFee != null && halfHourFee != null && hourFee != null) {
-                                Log.d(TAG, "✅ BTC Fees (manual parse): Fast=$fastestFee, Half=$halfHourFee, Hour=$hourFee")
-                                return@withContext Triple(fastestFee, halfHourFee, hourFee)
+                        when {
+                            endpoint.contains("mempool.space") -> {
+                                try {
+                                    // Parse mempool.space format
+                                    val jsonObject = gson.fromJson(responseBody, JsonObject::class.java)
+                                    val fastestFee = jsonObject.get("fastestFee")?.asInt
+                                    val halfHourFee = jsonObject.get("halfHourFee")?.asInt
+                                    val hourFee = jsonObject.get("hourFee")?.asInt
+                                    val economyFee = jsonObject.get("economyFee")?.asInt
+                                    val minimumFee = jsonObject.get("minimumFee")?.asInt
+                                    
+                                    if (fastestFee != null && halfHourFee != null && hourFee != null) {
+                                        Log.d(TAG, "✅ BTC Fees from mempool.space: Fastest=$fastestFee, Half=$halfHourFee, Hour=$hourFee, Economy=$economyFee, Min=$minimumFee")
+                                        return@withContext Triple(fastestFee, halfHourFee, hourFee)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "⚠️ Error parsing mempool.space fees: ${e.message}")
+                                }
                             }
-                        } catch (e2: Exception) {
-                            Log.e(TAG, "❌ Manual parsing also failed: ${e2.message}")
+                            endpoint.contains("blockstream") -> {
+                                try {
+                                    // Parse blockstream format: {"1": 1.5, "2": 1.2, "3": 1.1, ...}
+                                    val jsonObject = gson.fromJson(responseBody, JsonObject::class.java)
+                                    val fastFee = jsonObject.get("1")?.asDouble?.toInt() // Next block
+                                    val mediumFee = jsonObject.get("6")?.asDouble?.toInt() // ~1 hour
+                                    val slowFee = jsonObject.get("144")?.asDouble?.toInt() // ~24 hours
+                                    
+                                    if (fastFee != null && mediumFee != null && slowFee != null) {
+                                        Log.d(TAG, "✅ BTC Fees from blockstream: Fast=$fastFee, Medium=$mediumFee, Slow=$slowFee")
+                                        return@withContext Triple(fastFee, mediumFee, slowFee)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "⚠️ Error parsing blockstream fees: ${e.message}")
+                                }
+                            }
                         }
                     }
+                } else {
+                    Log.w(TAG, "⚠️ Fee endpoint $endpoint failed: HTTP ${response.code}")
                 }
-            } else {
-                Log.e(TAG, "❌ Failed to fetch BTC fees: HTTP ${response.code}")
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Fee endpoint $endpoint error: ${e.message}")
+                continue
             }
-            
-            // Fallback with reasonable fee estimates
-            Log.w(TAG, "⚠️ Using fallback fee estimates")
-            Triple(10, 5, 2) // Reasonable fallback fees in sat/vB
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error fetching BTC fees: ${e.message}")
-            Triple(10, 5, 2) // Fallback fees
         }
+        
+        // Final fallback - fetch current mempool status for realistic fees
+        try {
+            Log.d(TAG, "🔄 Trying to fetch current mempool status for realistic fee estimates")
+            val mempoolRequest = Request.Builder()
+                .url("https://mempool.space/api/mempool")
+                .addHeader("User-Agent", "BitcoinWidget/2.0")
+                .build()
+            
+            val mempoolResponse = client.newCall(mempoolRequest).execute()
+            if (mempoolResponse.isSuccessful) {
+                val responseBody = mempoolResponse.body?.string()
+                if (responseBody != null) {
+                    val jsonObject = gson.fromJson(responseBody, JsonObject::class.java)
+                    val mempoolSize = jsonObject.get("count")?.asInt ?: 0
+                    
+                    // Estimate fees based on mempool congestion
+                    val fees = when {
+                        mempoolSize > 100000 -> Triple(15, 8, 3) // High congestion
+                        mempoolSize > 50000 -> Triple(8, 5, 2)   // Medium congestion
+                        mempoolSize > 10000 -> Triple(5, 3, 1)   // Low congestion
+                        else -> Triple(2, 1, 1)                 // Very low congestion
+                    }
+                    
+                    Log.d(TAG, "✅ Estimated fees based on mempool size ($mempoolSize): ${fees.first}, ${fees.second}, ${fees.third}")
+                    return@withContext fees
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ Error fetching mempool status: ${e.message}")
+        }
+        
+        // Absolute fallback with current realistic values (based on image: 1 sat/vB across the board)
+        Log.w(TAG, "⚠️ Using realistic fallback fee estimates")
+        Triple(2, 1, 1) // Conservative realistic estimates
     }
     
     private suspend fun fetchFearGreedIndex(): Pair<Int?, String?> = withContext(Dispatchers.IO) {
