@@ -100,21 +100,29 @@ class PriceAlertManager(private val context: Context) {
             return
         }
         
+        val (enabled, upperLimit, lowerLimit) = getAlertSettings()
+        if (!enabled || (upperLimit == null && lowerLimit == null)) {
+            Log.d(TAG, "No active alerts, not starting monitoring")
+            return
+        }
+        
         stopMonitoring() // Stop existing monitoring
         
         monitoringJob = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
-            Log.d(TAG, "🔍 Started price monitoring for alerts")
+            Log.d(TAG, "🔍 Started price monitoring for alerts - Upper: $upperLimit, Lower: $lowerLimit")
             
             while (isActive) {
                 try {
                     checkPriceAlerts()
-                    delay(60_000L) // Check every minute
+                    delay(30_000L) // Check every 30 seconds for better responsiveness
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in price monitoring: ${e.message}")
-                    delay(60_000L) // Wait before retry
+                    delay(30_000L) // Wait before retry
                 }
             }
         }
+        
+        Log.d(TAG, "🚀 Price monitoring job started successfully")
     }
     
     /**
@@ -131,25 +139,42 @@ class PriceAlertManager(private val context: Context) {
      */
     private suspend fun checkPriceAlerts() {
         try {
+            Log.d(TAG, "🔍 Checking price alerts...")
+            
             val bitcoinData = apiService.fetchBitcoinData()
-            val currentPrice = bitcoinData.price ?: return
+            val currentPrice = bitcoinData.price
+            
+            if (currentPrice == null) {
+                Log.w(TAG, "⚠️ No price data available for alert check")
+                return
+            }
             
             val (enabled, upperLimit, lowerLimit) = getAlertSettings()
-            if (!enabled) return
+            if (!enabled) {
+                Log.d(TAG, "Alerts not enabled, skipping check")
+                return
+            }
             
             // Check cooldown period
             val lastAlertTime = prefs.getLong(KEY_LAST_ALERT_TIME, 0)
             val currentTime = System.currentTimeMillis()
-            if (currentTime - lastAlertTime < ALERT_COOLDOWN_MS) {
-                return // Still in cooldown period
+            val timeSinceLastAlert = currentTime - lastAlertTime
+            
+            if (timeSinceLastAlert < ALERT_COOLDOWN_MS) {
+                val minutesLeft = (ALERT_COOLDOWN_MS - timeSinceLastAlert) / (60 * 1000)
+                Log.d(TAG, "🕒 Still in cooldown period: ${minutesLeft} minutes left")
+                return
             }
+            
+            Log.d(TAG, "💰 Current price: $${String.format("%,.0f", currentPrice)} (Upper: $upperLimit, Lower: $lowerLimit)")
             
             // Check upper limit (sell signal)
             upperLimit?.let { limit ->
                 if (currentPrice >= limit) {
+                    Log.d(TAG, "🚀 UPPER ALERT TRIGGERED! Price $${String.format("%,.0f", currentPrice)} >= $${String.format("%,.0f", limit)}")
                     triggerAlert(
                         "🚀 Bitcoin Price Alert",
-                        "Bitcoin reached your target price of $${String.format("%,.0f", limit)}!\nCurrent price: $${String.format("%,.0f", currentPrice)}",
+                        "Bitcoin reached your target price of $${String.format("%,.0f", limit)}!\nCurrent price: $${String.format("%,.0f", currentPrice)}\n\nTime to consider selling! 💰",
                         AlertType.ABOVE
                     )
                     return
@@ -159,19 +184,20 @@ class PriceAlertManager(private val context: Context) {
             // Check lower limit (buy opportunity)
             lowerLimit?.let { limit ->
                 if (currentPrice <= limit) {
+                    Log.d(TAG, "📉 LOWER ALERT TRIGGERED! Price $${String.format("%,.0f", currentPrice)} <= $${String.format("%,.0f", limit)}")
                     triggerAlert(
                         "📉 Bitcoin Price Alert", 
-                        "Bitcoin dropped to your target price of $${String.format("%,.0f", limit)}!\nCurrent price: $${String.format("%,.0f", currentPrice)}",
+                        "Bitcoin dropped to your target price of $${String.format("%,.0f", limit)}!\nCurrent price: $${String.format("%,.0f", currentPrice)}\n\nTime to consider buying! 🛒",
                         AlertType.BELOW
                     )
                     return
                 }
             }
             
-            Log.d(TAG, "Price check: $${String.format("%,.0f", currentPrice)} (Upper: $upperLimit, Lower: $lowerLimit)")
+            Log.d(TAG, "✅ Price check complete - no alerts triggered")
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking price alerts: ${e.message}")
+            Log.e(TAG, "❌ Error checking price alerts: ${e.message}", e)
         }
     }
     
@@ -209,5 +235,26 @@ class PriceAlertManager(private val context: Context) {
     fun hasActiveAlerts(): Boolean {
         val (enabled, upper, lower) = getAlertSettings()
         return enabled && (upper != null || lower != null)
+    }
+    
+    /**
+     * Test alert system by sending a test notification
+     */
+    fun testAlert() {
+        Log.d(TAG, "🧪 Testing alert system...")
+        NotificationHelper.sendPriceAlert(
+            context,
+            "🧪 Test Alert",
+            "This is a test notification to verify your alerts are working!"
+        )
+        Log.d(TAG, "✅ Test alert sent")
+    }
+    
+    /**
+     * Force check alerts now (for testing)
+     */
+    suspend fun forceCheckAlerts() {
+        Log.d(TAG, "🔍 Force checking alerts now...")
+        checkPriceAlerts()
     }
 }

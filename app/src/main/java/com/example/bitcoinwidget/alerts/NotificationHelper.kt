@@ -79,4 +79,28 @@ object NotificationHelper {
     fun cancelAll(context: Context) {
         NotificationManagerCompat.from(context).cancelAll()
     }
+    
+    /**
+     * Check if notification permission is granted (Android 13+)
+     */
+    fun hasNotificationPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == 
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Permission not required for older versions
+        }
+    }
+    
+    /**
+     * Check if notification channel is created
+     */
+    fun isChannelCreated(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.getNotificationChannel(CHANNEL_ID) != null
+        } else {
+            true // Channels not used in older versions
+        }
+    }
 }

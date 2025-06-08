@@ -2,6 +2,7 @@ package com.example.bitcoinwidget
 
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import android.widget.*
 import com.example.bitcoinwidget.alerts.NotificationHelper
 import com.example.bitcoinwidget.alerts.PriceAlertManager
@@ -9,6 +10,7 @@ import com.example.bitcoinwidget.alerts.PriceAlertManager
 class PriceAlertsActivity : Activity() {
     
     private lateinit var alertManager: PriceAlertManager
+    private val TAG = "PriceAlertsActivity"
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,6 +23,8 @@ class PriceAlertsActivity : Activity() {
         
         setupUI()
         loadCurrentSettings()
+        
+        Log.d(TAG, "🔔 PriceAlertsActivity created")
     }
     
     private fun setupUI() {
@@ -30,6 +34,7 @@ class PriceAlertsActivity : Activity() {
         val setUpperButton = findViewById<Button>(R.id.set_upper_alert_button)
         val setLowerButton = findViewById<Button>(R.id.set_lower_alert_button)
         val clearAlertsButton = findViewById<Button>(R.id.clear_alerts_button)
+        val testAlertButton = findViewById<Button>(R.id.test_alert_button)
         val backButton = findViewById<Button>(R.id.back_button)
         val statusText = findViewById<TextView>(R.id.alert_status_text)
         
@@ -98,6 +103,12 @@ class PriceAlertsActivity : Activity() {
             enableSwitch.isChecked = false
             updateStatusText(statusText)
             showToast("🗑️ All alerts cleared")
+        }
+        
+        // Test alert button
+        testAlertButton?.setOnClickListener {
+            alertManager.testAlert()
+            showToast("🧪 Test notification sent!")
         }
         
         // Back button

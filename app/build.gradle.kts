@@ -1,6 +1,15 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+// Load keystore properties
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -8,20 +17,55 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.bitcoinwidget"
+        applicationId = "com.teerayut.bitcoinwidget"
         minSdk = 21
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Add version info for about screen
+        buildConfigField("String", "VERSION_NAME", "\"${versionName}\"")
+        buildConfigField("int", "VERSION_CODE", "${versionCode}")
+        buildConfigField("String", "BUILD_DATE", "\"2025-06-08\"")
+    }
+
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
+        
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"), 
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
+            
+            // Optimize for release
+            isDebuggable = false
+            isJniDebuggable = false
+        }
+    }
+    
+    buildFeatures {
+        buildConfig = true
     }
     
     compileOptions {
@@ -31,6 +75,12 @@ android {
     
     kotlinOptions {
         jvmTarget = "11"
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
 }
 

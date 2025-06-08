@@ -1,15 +1,22 @@
 package com.example.bitcoinwidget
 
+import android.Manifest
 import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.example.bitcoinwidget.alerts.NotificationHelper
+import com.example.bitcoinwidget.alerts.PriceAlertManager
 import com.example.bitcoinwidget.updates.AutoUpdateManager
 import kotlinx.coroutines.*
 
@@ -17,7 +24,12 @@ class MainActivity : Activity() {
     
     private val apiService = ApiService()
     private lateinit var autoUpdateManager: AutoUpdateManager
+    private lateinit var priceAlertManager: PriceAlertManager
     private val TAG = "MainActivity"
+    
+    companion object {
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,17 +38,68 @@ class MainActivity : Activity() {
         // Set content view to our layout
         setContentView(R.layout.activity_main)
         
-        // Initialize auto update manager
+        // Initialize managers
         autoUpdateManager = AutoUpdateManager(this)
+        priceAlertManager = PriceAlertManager(this)
+        
+        // Setup notifications
+        setupNotifications()
         
         // Start auto-update checking if enabled
         if (autoUpdateManager.isAutoUpdateEnabled()) {
             autoUpdateManager.startPeriodicUpdateCheck()
         }
         
+        // Start price monitoring if alerts are enabled
+        if (priceAlertManager.hasActiveAlerts()) {
+            priceAlertManager.startMonitoring()
+            Log.d(TAG, "🔔 Price alert monitoring started")
+        }
+        
         setupButtons()
         updateWidgetCount()
         updateStatus("Ready")
+    }
+    
+    private fun setupNotifications() {
+        // Create notification channel
+        NotificationHelper.createNotificationChannel(this)
+        
+        // Request notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) 
+                != PackageManager.PERMISSION_GRANTED) {
+                
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_REQUEST_CODE
+                )
+                Log.d(TAG, "📱 Requesting notification permission")
+            } else {
+                Log.d(TAG, "✅ Notification permission already granted")
+            }
+        }
+    }
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
+        when (requestCode) {
+            NOTIFICATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d(TAG, "✅ Notification permission granted")
+                    Toast.makeText(this, "✅ Notifications enabled", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.w(TAG, "❌ Notification permission denied")
+                    Toast.makeText(this, "⚠️ Price alerts need notification permission", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
     
     private fun setupButtons() {
@@ -52,6 +115,13 @@ class MainActivity : Activity() {
             Log.d(TAG, "🌐 Test API button clicked")
             updateStatus("Testing API connections...")
             testApiConnections()
+        }
+        
+        // Price Alerts Button
+        findViewById<Button>(R.id.btn_price_alerts)?.setOnClickListener {
+            Log.d(TAG, "🔔 Price alerts button clicked")
+            val intent = Intent(this, PriceAlertsActivity::class.java)
+            startActivity(intent)
         }
         
         // Feature Test Button
@@ -153,6 +223,19 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         updateWidgetCount()
+        
+        // Restart price monitoring if alerts are enabled
+        if (priceAlertManager.hasActiveAlerts()) {
+            priceAlertManager.startMonitoring()
+            Log.d(TAG, "🔔 Price alert monitoring restarted")
+        }
+        
         Log.d(TAG, "📱 MainActivity resumed")
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // Don't stop monitoring here - we want alerts to continue in background
+        Log.d(TAG, "📱 MainActivity destroyed (monitoring continues)")
     }
 }
