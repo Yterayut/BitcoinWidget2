@@ -10,12 +10,39 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Refresh Interval"
+        android:text="Refresh Interval Settings"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="#FFFFFF"
         android:layout_gravity="center"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/widget_selector_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Widget:"
+        android:textSize="16sp"
+        android:textColor="#CCCCCC"
+        android:layout_marginBottom="8dp" />
+
+    <Spinner
+        android:id="@+id/widget_selector_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:background="#333333"
+        android:popupBackground="#333333" />
+
+    <TextView
+        android:id="@+id/current_interval_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Current interval: 5 minutes"
+        android:textSize="14sp"
+        android:textColor="#FFA726"
+        android:layout_marginBottom="24dp"
+        android:layout_gravity="center" />
 
     <RadioGroup
         android:id="@+id/interval_radio_group"

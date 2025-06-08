@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A0A0A"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/modern_card_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="8dp"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🚀 Bitcoin Widget"
+                android:textSize="24sp"
+                android:textColor="@color/bitcoin_orange"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Professional Bitcoin Monitoring"
+                android:textSize="16sp"
+                android:textColor="#B8B8B8"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Status -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/modern_card_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Status"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/status_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ready"
+                android:textSize="16sp"
+                android:textColor="@color/fee_low"
+                android:background="#003D35"
+                android:padding="12dp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/widget_count_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Widgets: 0 active"
+                android:textSize="14sp"
+                android:textColor="#B8B8B8" />
+
+        </LinearLayout>
+
+        <!-- Quick Actions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/modern_card_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Quick Actions"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/btn_force_update_widget"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🔄 Force Update All Widgets"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:background="@drawable/button_primary_bg"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btn_test_api"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🌐 Test API Connection"
+                android:textColor="#B8B8B8"
+                android:background="@drawable/button_secondary_bg"
+                android:layout_marginBottom="12dp" />
+
+        </LinearLayout>
+
+        <!-- Configuration -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/modern_card_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="16dp"
+            android:elevation="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Configuration"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_widget_settings"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="⚙️ Settings"
+                    android:textColor="#B8B8B8"
+                    android:background="@drawable/button_secondary_bg"
+                    android:layout_marginEnd="8dp" />
+
+                <Button
+                    android:id="@+id/btn_price_alerts"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="🔔 Alerts"
+                    android:textColor="#B8B8B8"
+                    android:background="@drawable/button_secondary_bg"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Advanced Tools -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/modern_card_bg"
+            android:padding="20dp"
+            android:layout_marginBottom="32dp"
+            android:elevation="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Advanced Tools"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/btn_feature_test"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="🧪 Feature Test Dashboard"
+                android:textColor="#B8B8B8"
+                android:background="@drawable/button_secondary_bg" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

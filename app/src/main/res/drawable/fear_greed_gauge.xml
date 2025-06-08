@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="180dp"
+    android:height="90dp"
+    android:viewportWidth="180"
+    android:viewportHeight="90">
+
+    <!-- Background arc -->
+    <path
+        android:pathData="M 20,70 A 50,50 0 0,1 160,70"
+        android:strokeWidth="8"
+        android:strokeColor="#333333"
+        android:fillColor="#00000000" />
+
+    <!-- Red section (Fear) -->
+    <path
+        android:pathData="M 20,70 A 50,50 0 0,1 70,30"
+        android:strokeWidth="6"
+        android:strokeColor="#FF4444"
+        android:fillColor="#00000000" />
+
+    <!-- Yellow section (Neutral) -->
+    <path
+        android:pathData="M 70,30 A 50,50 0 0,1 110,30"
+        android:strokeWidth="6"
+        android:strokeColor="#FFD93D"
+        android:fillColor="#00000000" />
+
+    <!-- Green section (Greed) -->
+    <path
+        android:pathData="M 110,30 A 50,50 0 0,1 160,70"
+        android:strokeWidth="6"
+        android:strokeColor="#6BCF7F"
+        android:fillColor="#00000000" />
+
+    <!-- Pointer -->
+    <path
+        android:pathData="M 90,70 L 95,35"
+        android:strokeWidth="3"
+        android:strokeColor="#F7931A" />
+
+</vector>
