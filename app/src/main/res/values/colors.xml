@@ -22,4 +22,9 @@
     
     <!-- Fear & Greed -->
     <color name="neutral">#FFD93D</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B8B8B8</color>
+    <color name="text_accent">#F7931A</color>
 </resources>

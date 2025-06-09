@@ -28,7 +28,9 @@ android {
         // Add version info for about screen
         buildConfigField("String", "VERSION_NAME", "\"${versionName}\"")
         buildConfigField("int", "VERSION_CODE", "${versionCode}")
-        buildConfigField("String", "BUILD_DATE", "\"2025-06-08\"")
+        buildConfigField("String", "BUILD_DATE", "\"2025-06-09\"")
+        buildConfigField("String", "BUILD_TYPE", "\"production\"")
+        buildConfigField("boolean", "DEBUG_MODE", "false")
     }
 
     signingConfigs {
@@ -47,6 +49,8 @@ android {
             isDebuggable = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            buildConfigField("boolean", "DEBUG_MODE", "true")
+            buildConfigField("String", "BUILD_TYPE", "\"debug\"")
         }
         
         release {
@@ -58,9 +62,16 @@ android {
             )
             signingConfig = signingConfigs.getByName("release")
             
-            // Optimize for release
+            // Optimize for production release
             isDebuggable = false
             isJniDebuggable = false
+            buildConfigField("boolean", "DEBUG_MODE", "false")
+            buildConfigField("String", "BUILD_TYPE", "\"production\"")
+            
+            // Additional production optimizations
+            ndk {
+                debugSymbolLevel = "NONE"
+            }
         }
     }
     

@@ -88,8 +88,8 @@ class AutoUpdateManager(private val context: Context) {
         try {
             val currentVersion = getCurrentVersion()
             
-            // Since we don't have a real update server, simulate update check
-            val mockUpdateInfo = simulateUpdateCheck(currentVersion)
+            // Check for updates from GitHub releases
+            val updateInfo = checkFromGitHub(currentVersion)
             
             // Update last check time
             prefs.edit()
@@ -97,8 +97,8 @@ class AutoUpdateManager(private val context: Context) {
                 .putString(KEY_CURRENT_VERSION, currentVersion)
                 .apply()
             
-            Log.d(TAG, "Update check completed: ${mockUpdateInfo.available}")
-            return@withContext mockUpdateInfo
+            Log.d(TAG, "Update check completed: available=${updateInfo.available}, latest=${updateInfo.latestVersion}")
+            return@withContext updateInfo
             
         } catch (e: Exception) {
             Log.e(TAG, "Error checking for updates: ${e.message}")
@@ -113,32 +113,94 @@ class AutoUpdateManager(private val context: Context) {
     }
     
     /**
-     * Simulate update check (for demo purposes)
+     * Check for updates from GitHub releases API
      */
-    private fun simulateUpdateCheck(currentVersion: String): UpdateInfo {
-        // Simulate different scenarios
-        val scenarios = listOf(
-            // No update available
-            UpdateInfo(
-                available = false,
-                currentVersion = currentVersion,
-                latestVersion = currentVersion,
-                releaseNotes = null,
-                downloadUrl = null
-            ),
-            // Update available
-            UpdateInfo(
-                available = true,
-                currentVersion = currentVersion,
-                latestVersion = "1.1.0",
-                releaseNotes = "🎉 New Features:\n• Enhanced performance optimization\n• Improved battery life\n• Bug fixes and stability improvements",
-                downloadUrl = "https://github.com/bitcoin-widget/releases/v1.1.0.apk"
-            )
-        )
+    private suspend fun checkFromGitHub(currentVersion: String): UpdateInfo = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder()
+                .url("https://api.github.com/repos/your-username/BitcoinWidget2/releases/latest")
+                .addHeader("Accept", "application/vnd.github.v3+json")
+                .addHeader("User-Agent", "BitcoinWidget2-UpdateChecker")
+                .build()
+            
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val responseBody = response.body?.string()
+                if (responseBody != null) {
+                    val releaseInfo = gson.fromJson(responseBody, GitHubRelease::class.java)
+                    val latestVersion = releaseInfo.tagName.removePrefix("v")
+                    
+                    val isNewer = compareVersions(latestVersion, currentVersion) > 0
+                    
+                    return@withContext UpdateInfo(
+                        available = isNewer,
+                        currentVersion = currentVersion,
+                        latestVersion = latestVersion,
+                        releaseNotes = releaseInfo.body,
+                        downloadUrl = releaseInfo.assets.firstOrNull { it.name.endsWith(".apk") }?.downloadUrl
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to check GitHub releases: ${e.message}")
+        }
         
-        // Return scenario based on time for demo
-        return scenarios[if (System.currentTimeMillis() % 10 < 3) 1 else 0]
+        // Fallback to alternative update check
+        return@withContext checkFromAlternativeSource(currentVersion)
     }
+    
+    /**
+     * Alternative update check method
+     */
+    private fun checkFromAlternativeSource(currentVersion: String): UpdateInfo {
+        // This could check your own server, Firebase Remote Config, etc.
+        // For now, return no update available as fallback
+        return UpdateInfo(
+            available = false,
+            currentVersion = currentVersion,
+            latestVersion = currentVersion,
+            releaseNotes = null,
+            downloadUrl = null
+        )
+    }
+    
+    /**
+     * Compare version strings (semantic versioning)
+     */
+    private fun compareVersions(version1: String, version2: String): Int {
+        val parts1 = version1.split(".").map { it.toIntOrNull() ?: 0 }
+        val parts2 = version2.split(".").map { it.toIntOrNull() ?: 0 }
+        
+        val maxLength = maxOf(parts1.size, parts2.size)
+        
+        for (i in 0 until maxLength) {
+            val part1 = parts1.getOrNull(i) ?: 0
+            val part2 = parts2.getOrNull(i) ?: 0
+            
+            when {
+                part1 > part2 -> return 1
+                part1 < part2 -> return -1
+            }
+        }
+        
+        return 0
+    }
+    
+    // GitHub API response data classes
+    data class GitHubRelease(
+        @SerializedName("tag_name") val tagName: String,
+        @SerializedName("name") val name: String,
+        @SerializedName("body") val body: String?,
+        @SerializedName("draft") val draft: Boolean,
+        @SerializedName("prerelease") val prerelease: Boolean,
+        @SerializedName("assets") val assets: List<GitHubAsset>
+    )
+    
+    data class GitHubAsset(
+        @SerializedName("name") val name: String,
+        @SerializedName("browser_download_url") val downloadUrl: String,
+        @SerializedName("size") val size: Long
+    )
     
     /**
      * Start periodic update checking

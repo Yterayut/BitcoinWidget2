@@ -48,6 +48,7 @@ class BitcoinPriceWidget : AppWidgetProvider() {
             // แสดง Loading state ก่อน
             views.setTextViewText(R.id.price_text, "Loading...")
             views.setTextViewText(R.id.time_text, "Fetching data...")
+            views.setTextColor(R.id.price_text, android.graphics.Color.parseColor("#FFFFFF")) // White for loading
             appWidgetManager.updateAppWidget(appWidgetId, views)
             Log.d(TAG, "📱 Widget $appWidgetId set to loading state")
 
@@ -70,16 +71,43 @@ class BitcoinPriceWidget : AppWidgetProvider() {
                             try {
                                 val formattedPrice = String.format("$%,.0f", bitcoinData.price)
                                 views.setTextViewText(R.id.price_text, formattedPrice)
-                                Log.d(TAG, "💰 Widget $appWidgetId updated with price: $formattedPrice")
+                                
+                                // Set price color based on 24h change
+                                val priceColor = when {
+                                    bitcoinData.priceChangePercent24h != null && bitcoinData.priceChangePercent24h > 0 -> {
+                                        // Price increased - Green color
+                                        android.graphics.Color.parseColor("#4CAF50") // Green
+                                    }
+                                    bitcoinData.priceChangePercent24h != null && bitcoinData.priceChangePercent24h < 0 -> {
+                                        // Price decreased - Red color
+                                        android.graphics.Color.parseColor("#F44336") // Red
+                                    }
+                                    else -> {
+                                        // No change or no data - Default white/gray color
+                                        android.graphics.Color.parseColor("#FFFFFF") // White
+                                    }
+                                }
+                                views.setTextColor(R.id.price_text, priceColor)
+                                
+                                Log.d(TAG, "💰 Widget $appWidgetId updated with price: $formattedPrice, 24h change: ${bitcoinData.priceChangePercent24h}%, color: ${if (bitcoinData.priceChangePercent24h != null && bitcoinData.priceChangePercent24h > 0) "GREEN" else if (bitcoinData.priceChangePercent24h != null && bitcoinData.priceChangePercent24h < 0) "RED" else "WHITE"}")
 
                                 // Save price for popup
                                 prefs.edit().putFloat("latest_price_$appWidgetId", bitcoinData.price.toFloat()).apply()
+                                
+                                // Save 24h change data for reference
+                                bitcoinData.priceChangePercent24h?.let {
+                                    prefs.edit().putFloat("price_change_24h_$appWidgetId", it.toFloat()).apply()
+                                }
+                                
                             } catch (e: Exception) {
                                 Log.e(TAG, "❌ Error formatting price: ${e.message}")
                                 views.setTextViewText(R.id.price_text, "$ ${bitcoinData.price}")
+                                // Set default color on error
+                                views.setTextColor(R.id.price_text, android.graphics.Color.parseColor("#FFFFFF"))
                             }
                         } else {
                             views.setTextViewText(R.id.price_text, "Loading...")
+                            views.setTextColor(R.id.price_text, android.graphics.Color.parseColor("#FFFFFF")) // Default color for loading
                             Log.w(TAG, "⚠️ Widget $appWidgetId: No price data available, will retry")
                         }
 
@@ -123,10 +151,21 @@ class BitcoinPriceWidget : AppWidgetProvider() {
                             val formattedPrice = String.format("$%,.0f", cachedPrice)
                             views.setTextViewText(R.id.price_text, "$formattedPrice (cached)")
                             views.setTextViewText(R.id.time_text, "Tap to retry")
-                            Log.d(TAG, "📱 Widget $appWidgetId showing cached price: $formattedPrice")
+                            
+                            // Try to get cached 24h change for color
+                            val cached24hChange = prefs.getFloat("price_change_24h_$appWidgetId", 0f)
+                            val priceColor = when {
+                                cached24hChange > 0 -> android.graphics.Color.parseColor("#4CAF50") // Green
+                                cached24hChange < 0 -> android.graphics.Color.parseColor("#F44336") // Red
+                                else -> android.graphics.Color.parseColor("#FFA726") // Orange for cached/neutral
+                            }
+                            views.setTextColor(R.id.price_text, priceColor)
+                            
+                            Log.d(TAG, "📱 Widget $appWidgetId showing cached price: $formattedPrice with cached 24h change: $cached24hChange%")
                         } else {
                             views.setTextViewText(R.id.price_text, "Error")
                             views.setTextViewText(R.id.time_text, "Tap to retry")
+                            views.setTextColor(R.id.price_text, android.graphics.Color.parseColor("#FFFFFF")) // White for error
                             Log.e(TAG, "❌ Widget $appWidgetId: No cached data available")
                         }
                         appWidgetManager.updateAppWidget(appWidgetId, views)

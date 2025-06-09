@@ -113,15 +113,23 @@ class PerformanceManager(private val context: Context) {
      */
     private fun hasStrongNetworkConnection(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         
-        return when {
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            
+            when {
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+                }
+                else -> false
             }
-            else -> false
+        } else {
+            // Fallback for API < 23
+            @Suppress("DEPRECATION")
+            val networkInfo = connectivityManager.activeNetworkInfo
+            networkInfo?.isConnected == true && networkInfo.type == ConnectivityManager.TYPE_WIFI
         }
     }
     

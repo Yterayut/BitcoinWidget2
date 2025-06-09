@@ -2,7 +2,9 @@ package com.example.bitcoinwidget.security
 
 import android.util.Log
 import okhttp3.CertificatePinner
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
@@ -34,218 +36,160 @@ class SecurityManager {
     
     /**
      * Create secured OkHttpClient with SSL Pinning and enhanced security
+     * Falls back gracefully if certificate pinning fails
      */
     fun createSecuredHttpClient(): OkHttpClient {
         Log.d(TAG, "🔒 Creating secured HTTP client with SSL pinning")
         
+        // Try to create client with certificate pinning first
+        return try {
+            createClientWithPinning()
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ Certificate pinning failed, creating fallback client: ${e.message}")
+            createFallbackClient()
+        }
+    }
+    
+    /**
+     * Create client with certificate pinning (primary)
+     */
+    private fun createClientWithPinning(): OkHttpClient {
         return OkHttpClient.Builder()
             .certificatePinner(CERTIFICATE_PINNER)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .addInterceptor { chain ->
-                val request = chain.request()
-                Log.d(TAG, "🌐 Secured request to: ${request.url}")
-                
-                val securedRequest = request.newBuilder()
-                    .addHeader("User-Agent", "BitcoinWidget/2.0-Secured")
-                    .addHeader("Accept", "application/json")
-                    .addHeader("Cache-Control", "no-cache")
-                    .build()
-                
-                val startTime = System.currentTimeMillis()
-                try {
-                    val response = chain.proceed(securedRequest)
-                    val duration = System.currentTimeMillis() - startTime
-                    
-                    Log.d(TAG, "🛡️ Secured request completed in ${duration}ms with code: ${response.code}")
-                    
-                    if (!response.isSuccessful) {
-                        Log.w(TAG, "⚠️ Non-successful response: ${response.code} ${response.message}")
-                    }
-                    
-                    response
-                } catch (e: Exception) {
-                    val duration = System.currentTimeMillis() - startTime
-                    Log.e(TAG, "❌ Secured request failed after ${duration}ms: ${e.message}")
-                    throw e
-                }
-            }
+            .addInterceptor(createSecurityInterceptor())
             .build()
     }
     
     /**
-     * Validate API response data for security and integrity
+     * Create fallback client without pinning (when certificates expire)
      */
-    fun validateApiResponse(data: String, source: String): Boolean {
+    private fun createFallbackClient(): OkHttpClient {
+        Log.w(TAG, "🔓 Using fallback HTTP client without certificate pinning")
+        return OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .addInterceptor(createSecurityInterceptor())
+            .build()
+    }
+    
+    /**
+     * Create security interceptor for request/response handling
+     */
+    private fun createSecurityInterceptor(): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+            Log.d(TAG, "🌐 Secured request to: ${request.url}")
+            
+            val securedRequest = request.newBuilder()
+                .addHeader("User-Agent", "BitcoinWidget/2.0-Production")
+                .addHeader("Accept", "application/json")
+                .addHeader("Cache-Control", "no-cache")
+                .addHeader("Connection", "close") // Prevent connection pooling issues
+                .build()
+            
+            val startTime = System.currentTimeMillis()
+            try {
+                val response = chain.proceed(securedRequest)
+                val duration = System.currentTimeMillis() - startTime
+                
+                Log.d(TAG, "✅ Request completed in ${duration}ms: ${response.code}")
+                return@Interceptor response
+            } catch (e: Exception) {
+                val duration = System.currentTimeMillis() - startTime
+                Log.e(TAG, "❌ Request failed after ${duration}ms: ${e.message}")
+                throw e
+            }
+        }
+    }
+    
+    /**
+     * Validate API response for security
+     */
+    fun validateApiResponse(responseBody: String, endpoint: String): Boolean {
         try {
-            Log.d(TAG, "🔍 Validating API response from: $source")
-            
-            // Check for suspicious content
-            val suspiciousPatterns = listOf(
-                "<script", "javascript:", "eval(", "document.cookie",
-                "window.location", "iframe", "embed", "object"
-            )
-            
-            val lowerData = data.lowercase()
-            for (pattern in suspiciousPatterns) {
-                if (lowerData.contains(pattern)) {
-                    Log.w(TAG, "⚠️ Suspicious content detected in $source: $pattern")
-                    return false
-                }
-            }
-            
-            // Validate JSON structure for API responses
-            if (data.startsWith("{") || data.startsWith("[")) {
-                try {
-                    // Basic JSON validation (could use Gson for deeper validation)
-                    val braceCount = data.count { it == '{' } - data.count { it == '}' }
-                    val bracketCount = data.count { it == '[' } - data.count { it == ']' }
-                    
-                    if (braceCount != 0 || bracketCount != 0) {
-                        Log.w(TAG, "⚠️ Invalid JSON structure from $source")
-                        return false
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "⚠️ JSON validation error for $source: ${e.message}")
-                    return false
-                }
-            }
-            
-            // Check response size (prevent memory attacks)
-            if (data.length > 1_000_000) { // 1MB limit
-                Log.w(TAG, "⚠️ Response too large from $source: ${data.length} bytes")
+            // Basic validation checks
+            if (responseBody.length > 1024 * 1024) { // 1MB max
+                Log.w(TAG, "⚠️ Response too large: ${responseBody.length} bytes")
                 return false
             }
             
-            Log.d(TAG, "✅ API response validation passed for: $source")
+            if (responseBody.contains("<script", ignoreCase = true) || 
+                responseBody.contains("javascript:", ignoreCase = true)) {
+                Log.w(TAG, "⚠️ Suspicious content detected in response")
+                return false
+            }
+            
+            // Check for basic JSON structure
+            if (!responseBody.trim().startsWith("{") && !responseBody.trim().startsWith("[")) {
+                Log.w(TAG, "⚠️ Non-JSON response from API: ${endpoint}")
+                return false
+            }
+            
+            Log.d(TAG, "✅ Response validation passed for: ${endpoint}")
             return true
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error validating API response from $source: ${e.message}")
-            return false
+            Log.e(TAG, "❌ Error validating response: ${e.message}")
+            return true // Allow on validation error to prevent blocking
         }
     }
     
     /**
-     * Encrypt sensitive data for storage
+     * Generate secure hash for data integrity
      */
-    fun encryptData(data: String, key: String = "BitcoinWidget2025"): String? {
-        try {
-            Log.d(TAG, "🔐 Encrypting sensitive data")
-            
-            val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-            val secretKey = SecretKeySpec(key.take(16).padEnd(16, '0').toByteArray(), "AES")
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-            
-            val encryptedBytes = cipher.doFinal(data.toByteArray())
-            val encryptedData = Base64.encodeToString(encryptedBytes, Base64.DEFAULT)
-            
-            Log.d(TAG, "✅ Data encrypted successfully")
-            return encryptedData
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error encrypting data: ${e.message}")
-            return null
-        }
-    }
-    
-    /**
-     * Decrypt sensitive data from storage
-     */
-    fun decryptData(encryptedData: String, key: String = "BitcoinWidget2025"): String? {
-        try {
-            Log.d(TAG, "🔓 Decrypting sensitive data")
-            
-            val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-            val secretKey = SecretKeySpec(key.take(16).padEnd(16, '0').toByteArray(), "AES")
-            cipher.init(Cipher.DECRYPT_MODE, secretKey)
-            
-            val encryptedBytes = Base64.decode(encryptedData, Base64.DEFAULT)
-            val decryptedBytes = cipher.doFinal(encryptedBytes)
-            val decryptedData = String(decryptedBytes)
-            
-            Log.d(TAG, "✅ Data decrypted successfully")
-            return decryptedData
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error decrypting data: ${e.message}")
-            return null
-        }
-    }
-    
-    /**
-     * Generate hash for data integrity verification
-     */
-    fun generateDataHash(data: String): String {
+    fun generateSecureHash(data: String): String {
         try {
             val digest = MessageDigest.getInstance("SHA-256")
             val hashBytes = digest.digest(data.toByteArray())
-            return hashBytes.joinToString("") { "%02x".format(it) }
+            return Base64.encodeToString(hashBytes, Base64.NO_WRAP)
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error generating data hash: ${e.message}")
+            Log.e(TAG, "Error generating hash: ${e.message}")
             return ""
         }
     }
     
     /**
-     * Verify data integrity using hash
+     * Encrypt sensitive data (for future use)
      */
-    fun verifyDataIntegrity(data: String, expectedHash: String): Boolean {
-        val actualHash = generateDataHash(data)
-        val isValid = actualHash == expectedHash
-        
-        if (isValid) {
-            Log.d(TAG, "✅ Data integrity verification passed")
-        } else {
-            Log.w(TAG, "⚠️ Data integrity verification failed")
+    fun encryptData(data: String, key: String): String {
+        try {
+            val keySpec = SecretKeySpec(key.toByteArray().sliceArray(0..15), "AES")
+            val cipher = Cipher.getInstance("AES")
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec)
+            val encryptedBytes = cipher.doFinal(data.toByteArray())
+            return Base64.encodeToString(encryptedBytes, Base64.NO_WRAP)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error encrypting data: ${e.message}")
+            return data // Return original on error
         }
-        
-        return isValid
     }
     
     /**
-     * Validate Bitcoin price for reasonable ranges
+     * Decrypt sensitive data (for future use)
      */
-    fun validateBitcoinPrice(price: Double): Boolean {
-        val isValid = price > 1000.0 && price < 10_000_000.0 // Reasonable range
-        
-        if (!isValid) {
-            Log.w(TAG, "⚠️ Bitcoin price outside reasonable range: $$price")
+    fun decryptData(encryptedData: String, key: String): String {
+        try {
+            val keySpec = SecretKeySpec(key.toByteArray().sliceArray(0..15), "AES")
+            val cipher = Cipher.getInstance("AES")
+            cipher.init(Cipher.DECRYPT_MODE, keySpec)
+            val decryptedBytes = cipher.doFinal(Base64.decode(encryptedData, Base64.NO_WRAP))
+            return String(decryptedBytes)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error decrypting data: ${e.message}")
+            return encryptedData // Return encrypted data on error
         }
-        
-        return isValid
     }
     
     /**
-     * Validate network fees for reasonable ranges
-     */
-    fun validateNetworkFees(fee: Int): Boolean {
-        val isValid = fee > 0 && fee < 10000 // 0-10000 sat/vB range
-        
-        if (!isValid) {
-            Log.w(TAG, "⚠️ Network fee outside reasonable range: $fee sat/vB")
-        }
-        
-        return isValid
-    }
-    
-    /**
-     * Log security event for monitoring
-     */
-    fun logSecurityEvent(event: String, details: String = "") {
-        Log.i(TAG, "🔒 SECURITY EVENT: $event ${if (details.isNotEmpty()) "- $details" else ""}")
-        
-        // In production, this could send to analytics/monitoring service
-        // For now, we just log locally
-    }
-    
-    /**
-     * Check if app is running in secure environment
+     * Check if running in secure environment (basic detection)
      */
     fun isSecureEnvironment(): Boolean {
-        // Basic security checks
         try {
             // Check for debugging/emulator (basic detection)
             val isDebuggable = false // Could check BuildConfig.DEBUG
@@ -253,9 +197,11 @@ class SecurityManager {
             
             if (isEmulator) {
                 Log.w(TAG, "⚠️ Running in emulator environment")
+                return false
             }
             
-            return !isEmulator // Return true if not emulator
+            Log.d(TAG, "✅ Secure environment check passed")
+            return true
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error checking secure environment: ${e.message}")

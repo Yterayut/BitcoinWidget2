@@ -39,6 +39,9 @@ class PopupActivity : Activity() {
             
             // Setup BTC price header click
             setupBtcPriceClick()
+            
+            // Setup card click listeners for explanations
+            setupCardClickListeners()
 
             // Load and display data
             loadEnhancedData()
@@ -126,6 +129,121 @@ class PopupActivity : Activity() {
                 Log.e("PopupActivity", "❌ Error closing popup: ${e.message}")
             }
         }
+    }
+    
+    private fun setupCardClickListeners() {
+        try {
+            Log.d("PopupActivity", "🎯 Setting up card click listeners for explanations")
+            
+            // เนื่องจากเราไม่มี ID เฉพาะสำหรับ card แต่ละตัว เราจะใช้ทางอ้อม
+            // Market Overview Card - หา LinearLayout ที่มี market_cap เป็นลูก
+            setupMarketOverviewCardClick()
+            
+            // Network Data Card - หา LinearLayout ที่มี block_height เป็นลูก
+            setupNetworkDataCardClick()
+            
+            // Network Fees Card - หา LinearLayout ที่มี fee_low เป็นลูก
+            setupNetworkFeesCardClick()
+            
+            // Fear & Greed Card - หา LinearLayout ที่มี fear_greed_value เป็นลูก
+            setupFearGreedCardClick()
+            
+            // MVRV Card - หา LinearLayout ที่มี mvrv_score เป็นลูก
+            setupMvrvCardClick()
+            
+        } catch (e: Exception) {
+            Log.e("PopupActivity", "❌ Error setting up card click listeners: ${e.message}")
+        }
+    }
+    
+    private fun setupMarketOverviewCardClick() {
+        try {
+            // หา parent card ของ market_cap
+            val marketCapView = findViewById<TextView>(R.id.market_cap)
+            val cardView = findParentCard(marketCapView)
+            cardView?.setOnClickListener {
+                Log.d("PopupActivity", "🎯 Market Overview card clicked")
+                ExplanationActivity.start(this, ExplanationActivity.CARD_MARKET_OVERVIEW)
+            }
+        } catch (e: Exception) {
+            Log.e("PopupActivity", "❌ Error setting up market overview click: ${e.message}")
+        }
+    }
+    
+    private fun setupNetworkDataCardClick() {
+        try {
+            val blockHeightView = findViewById<TextView>(R.id.block_height)
+            val cardView = findParentCard(blockHeightView)
+            cardView?.setOnClickListener {
+                Log.d("PopupActivity", "🎯 Network Data card clicked")
+                ExplanationActivity.start(this, ExplanationActivity.CARD_NETWORK_DATA)
+            }
+        } catch (e: Exception) {
+            Log.e("PopupActivity", "❌ Error setting up network data click: ${e.message}")
+        }
+    }
+    
+    private fun setupNetworkFeesCardClick() {
+        try {
+            val feeLowView = findViewById<TextView>(R.id.fee_low)
+            val cardView = findParentCard(feeLowView)
+            cardView?.setOnClickListener {
+                Log.d("PopupActivity", "🎯 Network Fees card clicked")
+                ExplanationActivity.start(this, ExplanationActivity.CARD_NETWORK_FEES)
+            }
+        } catch (e: Exception) {
+            Log.e("PopupActivity", "❌ Error setting up network fees click: ${e.message}")
+        }
+    }
+    
+    private fun setupFearGreedCardClick() {
+        try {
+            val fearGreedView = findViewById<TextView>(R.id.fear_greed_value)
+            val cardView = findParentCard(fearGreedView)
+            cardView?.setOnClickListener {
+                Log.d("PopupActivity", "🎯 Fear & Greed card clicked")
+                ExplanationActivity.start(this, ExplanationActivity.CARD_FEAR_GREED)
+            }
+        } catch (e: Exception) {
+            Log.e("PopupActivity", "❌ Error setting up fear greed click: ${e.message}")
+        }
+    }
+    
+    private fun setupMvrvCardClick() {
+        try {
+            val mvrvView = findViewById<TextView>(R.id.mvrv_score)
+            val cardView = findParentCard(mvrvView)
+            cardView?.setOnClickListener {
+                Log.d("PopupActivity", "🎯 MVRV card clicked")
+                ExplanationActivity.start(this, ExplanationActivity.CARD_MVRV)
+            }
+        } catch (e: Exception) {
+            Log.e("PopupActivity", "❌ Error setting up MVRV click: ${e.message}")
+        }
+    }
+    
+    private fun findParentCard(childView: android.view.View?): android.view.View? {
+        if (childView == null) return null
+        
+        var currentParent: android.view.ViewParent? = childView.parent
+        // หา LinearLayout ที่มี background เป็น modern_card_bg (Card Container)
+        while (currentParent != null && currentParent is android.view.View) {
+            val view = currentParent as android.view.View
+            if (view is LinearLayout) {
+                // ตรวจสอบว่าเป็น card หรือไม่จาก background
+                try {
+                    val background = view.background
+                    if (background != null) {
+                        // เป็น card ที่เราต้องการ
+                        return view
+                    }
+                } catch (e: Exception) {
+                    // ไม่สำคัญ ให้ลองต่อ
+                }
+            }
+            currentParent = (currentParent as android.view.View).parent
+        }
+        return null
     }
 
     private fun setupSwipeRefresh() {
@@ -316,7 +434,8 @@ class PopupActivity : Activity() {
         }
 
         mvrvZScore?.let {
-            findViewById<TextView>(R.id.mvrv_value)?.text = "${String.format("%.2f", it)} - ${getMvrvZScoreStatus(it.toDouble())}"
+            findViewById<TextView>(R.id.mvrv_score)?.text = String.format("%.2f", it)
+            findViewById<TextView>(R.id.mvrv_status)?.text = getMvrvStatusWithIcon(it.toDouble())
         }
 
         // Display cached fees with proper sat/vB unit
@@ -362,8 +481,8 @@ class PopupActivity : Activity() {
 
         // Update MVRV Z-Score
         bitcoinData.mvrvZScore?.let { zScore ->
-            val status = getMvrvZScoreStatus(zScore)
-            findViewById<TextView>(R.id.mvrv_value)?.text = "${String.format("%.2f", zScore)} - $status"
+            findViewById<TextView>(R.id.mvrv_score)?.text = String.format("%.2f", zScore)
+            findViewById<TextView>(R.id.mvrv_status)?.text = getMvrvStatusWithIcon(zScore)
         }
 
         // Update Mining Fees with better labeling to match mempool.space
@@ -419,11 +538,18 @@ class PopupActivity : Activity() {
 
     private fun getMvrvZScoreStatus(zScore: Double): String {
         return when {
-            zScore < -1.0 -> "🟢 Extremely Undervalued"
-            zScore < 0.0 -> "🟢 Undervalued"
-            zScore < 2.0 -> "🟡 Fair Value"
-            zScore < 4.0 -> "🟠 Overvalued"
-            zScore < 7.0 -> "🔴 Highly Overvalued"
+            zScore < -0.5 -> "🟢 Undervalued"
+            zScore < 2.4 -> "🟡 Fair Value"
+            zScore < 7.0 -> "🔴 Overvalued"
+            else -> "🔴 Extreme Bubble"
+        }
+    }
+    
+    private fun getMvrvStatusWithIcon(zScore: Double): String {
+        return when {
+            zScore < -0.5 -> "🟢 Undervalued"
+            zScore < 2.4 -> "🟡 Fair Value"
+            zScore < 7.0 -> "🔴 Overvalued"
             else -> "🔴 Extreme Bubble"
         }
     }
@@ -463,7 +589,8 @@ class PopupActivity : Activity() {
 
     private fun displayErrorData() {
         findViewById<TextView>(R.id.btc_price_popup)?.text = "Error loading price"
-        findViewById<TextView>(R.id.mvrv_value)?.text = "N/A"
+        findViewById<TextView>(R.id.mvrv_score)?.text = "N/A"
+        findViewById<TextView>(R.id.mvrv_status)?.text = "🔴 Error"
         findViewById<TextView>(R.id.fee_low)?.text = "N/A"
         findViewById<TextView>(R.id.fee_medium)?.text = "N/A"
         findViewById<TextView>(R.id.fee_high)?.text = "N/A"

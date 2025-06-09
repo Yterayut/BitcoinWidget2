@@ -104,6 +104,13 @@
                     android:text="Live from Binance"
                     android:textSize="12sp"
                     android:textColor="#B8B8B8" />
+                    
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="USDT price (≈ USD)"
+                    android:textSize="10sp"
+                    android:textColor="#FFB800" />
 
             </LinearLayout>
 
@@ -153,10 +160,18 @@
                         android:id="@+id/market_cap"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="$2.1T"
+                        android:text="$2081.0B"
                         android:textSize="18sp"
                         android:textColor="#FFFFFF"
                         android:textStyle="bold" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Price × Supply"
+                        android:textSize="9sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
@@ -179,10 +194,18 @@
                         android:id="@+id/btc_dominance"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="55.2%"
+                        android:text="63.5%"
                         android:textSize="18sp"
                         android:textColor="#F7931A"
                         android:textStyle="bold" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="vs All Crypto"
+                        android:textSize="9sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
@@ -213,10 +236,18 @@
                         android:id="@+id/supply_info"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="19.8M / 21M BTC"
+                        android:text="19750000 / 21M BTC"
                         android:textSize="16sp"
                         android:textColor="#FFFFFF"
                         android:textStyle="bold" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mined / Max Total"
+                        android:textSize="9sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
@@ -242,7 +273,16 @@
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="8dp" />
+                
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔗 Live from mempool.space &amp; blockstream.info"
+                android:textSize="11sp"
+                android:textColor="#B8B8B8"
+                android:gravity="center"
+                android:layout_marginBottom="8dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -269,10 +309,18 @@
                         android:id="@+id/block_height"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="870,123"
+                        android:text="899,500"
                         android:textSize="16sp"
                         android:textColor="#FFFFFF"
                         android:textStyle="bold" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Blocks Mined"
+                        android:textSize="9sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
@@ -295,10 +343,18 @@
                         android:id="@+id/halving_countdown"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="3 years, 2 months"
+                        android:text="3y 2m"
                         android:textSize="14sp"
                         android:textColor="#FFD93D"
                         android:textStyle="bold" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mining Reward ÷ 2"
+                        android:textSize="9sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
@@ -333,6 +389,14 @@
                         android:textSize="16sp"
                         android:textColor="#4CAF50"
                         android:textStyle="bold" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Electricity + Hardware"
+                        android:textSize="9sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
@@ -358,7 +422,16 @@
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="8dp" />
+                
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="💡 Transaction fees to get confirmed by miners"
+                android:textSize="11sp"
+                android:textColor="#B8B8B8"
+                android:gravity="center"
+                android:layout_marginBottom="12dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -535,7 +608,16 @@
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:layout_marginBottom="20dp" />
+                android:layout_marginBottom="8dp" />
+                
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📈 Market emotions: 0=Fear, 100=Greed (Alternative.me)"
+                android:textSize="11sp"
+                android:textColor="#B8B8B8"
+                android:gravity="center"
+                android:layout_marginBottom="12dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -677,7 +759,7 @@
 
         </LinearLayout>
 
-        <!-- MVRV -->
+        <!-- MVRV Z-Score Section - Enhanced -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -690,22 +772,101 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Market Valuation"
+                android:text="📊 BTC Market Valuation (MVRV Z-Score)"
                 android:textSize="18sp"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:layout_marginBottom="12dp" />
+                android:layout_marginBottom="16dp" />
 
-            <TextView
-                android:id="@+id/mvrv_value"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="2.38 - Overvalued"
-                android:textSize="16sp"
-                android:textColor="#FFB800"
-                android:textStyle="bold"
-                android:gravity="center" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Z-Score"
+                        android:textSize="12sp"
+                        android:textColor="#808080"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:id="@+id/mvrv_score"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2.38"
+                        android:textSize="36sp"
+                        android:textColor="#FF6B35"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Market Status"
+                        android:textSize="12sp"
+                        android:textColor="#808080"
+                        android:gravity="center" />
+
+                    <TextView
+                        android:id="@+id/mvrv_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔴 Overvalued"
+                        android:textSize="16sp"
+                        android:textColor="#FF6B35"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+            
+            <!-- MVRV Z-Score Guide -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/history_card_bg"
+                android:padding="12dp"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💡 "
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="📊 Market valuation indicator comparing current price to historical average. Above 2.4 = overvalued, below -0.5 = undervalued"
+                    android:textSize="11sp"
+                    android:textColor="#B8B8B8"
+                    android:lineSpacingMultiplier="1.1" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

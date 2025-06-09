@@ -1,15 +1,52 @@
+# Gradle files
+.gradle/
+build/
+gradlew
+gradlew.bat
+gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio generated files and folders
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+.idea/
 .DS_Store
-/build
-/captures
 .externalNativeBuild
 .cxx
-local.properties
+captures/
+
+# Keystore files
+keystore.properties
+*.keystore
+*.jks
+
+# APK files (optional - comment out if you want to include APKs)
+*.apk
+*.aab
+
+# ProGuard generated files
+proguard/
+
+# Log Files
+*.log
+
+# Android Profiling
+*.hprof
+
+# Sensitive data
+apikey.properties
+secrets.properties
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
