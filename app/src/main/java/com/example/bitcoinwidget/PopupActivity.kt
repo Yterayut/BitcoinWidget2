@@ -5,11 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.view.Window
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.bitcoinwidget.ui.animations.CardAnimator
 import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -18,12 +21,14 @@ class PopupActivity : Activity() {
 
     private val apiService = ApiService()
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private val cardAnimator = CardAnimator()
     private var isRefreshing = false
+    private var allCards = mutableListOf<View>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        Log.d("PopupActivity", "🔥 Enhanced PopupActivity onCreate() called")
+        Log.d("PopupActivity", "🔥 Enhanced PopupActivity with Animations onCreate() called")
         
         try {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -31,6 +36,9 @@ class PopupActivity : Activity() {
             
             Log.d("PopupActivity", "✅ Enhanced layout set successfully")
 
+            // Collect all card views for animation
+            collectCardViews()
+            
             // Setup SwipeRefreshLayout if available
             setupSwipeRefresh()
             
@@ -43,18 +51,63 @@ class PopupActivity : Activity() {
             // Setup card click listeners for explanations
             setupCardClickListeners()
 
-            // Load and display data
-            loadEnhancedData()
+            // Load and display data with entrance animations
+            loadDataWithAnimations()
 
             // ปิด Activity เมื่อกดนอกพื้นที่
             setFinishOnTouchOutside(true)
             
-            Log.d("PopupActivity", "🎉 Enhanced PopupActivity setup complete")
+            Log.d("PopupActivity", "🎉 Enhanced PopupActivity with animations setup complete")
             
         } catch (e: Exception) {
             Log.e("PopupActivity", "❌ Error in enhanced onCreate: ${e.message}")
             e.printStackTrace()
         }
+    }
+    
+    private fun collectCardViews() {
+        // Collect all card views for coordinated animations
+        allCards.clear()
+        
+        // Add cards in display order for staggered animation
+        findViewById<View>(R.id.btc_price_header)?.let { allCards.add(it) }
+        
+        // Find cards by their child elements (since we don't have direct card IDs)
+        findCardByChildId(R.id.market_cap)?.let { allCards.add(it) }
+        findCardByChildId(R.id.block_height)?.let { allCards.add(it) }
+        findCardByChildId(R.id.fee_low)?.let { allCards.add(it) }
+        findCardByChildId(R.id.fear_greed_value)?.let { allCards.add(it) }
+        findCardByChildId(R.id.mvrv_score)?.let { allCards.add(it) }
+        
+        Log.d("PopupActivity", "📋 Collected ${allCards.size} cards for animation")
+    }
+    
+    private fun findCardByChildId(childId: Int): View? {
+        val child = findViewById<View>(childId)
+        var parent = child?.parent
+        while (parent != null) {
+            if (parent is CardView) {
+                return parent as View
+            }
+            parent = parent.parent
+        }
+        return null
+    }
+    
+    private fun loadDataWithAnimations() {
+        // Start entrance animations
+        runOnUiThread {
+            cardAnimator.animateCardsSequential(allCards)
+        }
+        
+        // Load actual data
+        loadEnhancedData()
+        
+        Log.d("PopupActivity", "🚀 Loading data with entrance animations")
+    }
+    
+    private fun updatePriceWithAnimation(textView: TextView, newPrice: String, isIncrease: Boolean? = null) {
+        cardAnimator.animatePriceUpdate(textView, newPrice, isIncrease)
     }
     
     private fun setupMainAppButton() {
@@ -250,29 +303,64 @@ class PopupActivity : Activity() {
         try {
             swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout)
             swipeRefreshLayout.setOnRefreshListener {
-                Log.d("PopupActivity", "🔄 Pull-to-refresh triggered")
-                refreshData()
+                Log.d("PopupActivity", "🔄 Pull-to-refresh triggered with animation")
+                refreshDataWithAnimation()
             }
             
-            // Set custom colors
+            // Set Bitcoin-themed colors
             swipeRefreshLayout.setColorSchemeResources(
+                android.R.color.holo_orange_light,
                 android.R.color.holo_orange_dark,
-                android.R.color.holo_blue_dark,
-                android.R.color.holo_green_dark
+                android.R.color.white
             )
         } catch (e: Exception) {
             Log.w("PopupActivity", "⚠️ SwipeRefreshLayout not found in layout, continuing without pull-to-refresh")
         }
     }
     
-    private fun refreshData() {
+    private fun refreshDataWithAnimation() {
         if (isRefreshing) {
             Log.d("PopupActivity", "⚠️ Already refreshing, skipping duplicate request")
             return
         }
         
         isRefreshing = true
-        loadEnhancedData(forceRefresh = true)
+        
+        // Animate all cards during refresh
+        allCards.forEach { card ->
+            cardAnimator.animateLoadingShimmer(card)
+        }
+        
+        // Load data with animation completion
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                loadEnhancedData(forceRefresh = true)
+                
+                // Stop loading animations and show success
+                allCards.forEach { card ->
+                    cardAnimator.stopLoadingShimmer(card)
+                    cardAnimator.animateSuccess(card)
+                }
+                
+                Log.d("PopupActivity", "✅ Animated refresh complete")
+                
+            } catch (e: Exception) {
+                Log.e("PopupActivity", "❌ Error during animated refresh: ${e.message}")
+                
+                // Show error state
+                allCards.forEach { card ->
+                    cardAnimator.stopLoadingShimmer(card)
+                    cardAnimator.animateErrorShake(card)
+                }
+            } finally {
+                swipeRefreshLayout.isRefreshing = false
+                isRefreshing = false
+            }
+        }
+    }
+    
+    private fun refreshData() {
+        refreshDataWithAnimation()
     }
     
     private fun loadEnhancedData(forceRefresh: Boolean = false) {
@@ -598,5 +686,14 @@ class PopupActivity : Activity() {
         findViewById<TextView>(R.id.fear_greed_value)?.text = "N/A"
         findViewById<TextView>(R.id.fear_greed_label)?.text = "Error"
         findViewById<TextView>(R.id.last_updated)?.text = "Failed to update"
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up any running animations
+        allCards.forEach { card ->
+            cardAnimator.stopLoadingShimmer(card)
+        }
+        Log.d("PopupActivity", "🧹 Cleaned up animations on destroy")
     }
 }
