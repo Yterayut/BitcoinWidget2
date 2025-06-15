@@ -41,8 +41,23 @@
         android:text="Current interval: 5 minutes"
         android:textSize="14sp"
         android:textColor="#FFA726"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="8dp"
         android:layout_gravity="center" />
+
+    <!-- Power Saving Status Display -->
+    <TextView
+        android:id="@+id/power_status_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="⚡ Power optimization status will appear here"
+        android:textSize="12sp"
+        android:textColor="#4CAF50"
+        android:layout_marginBottom="16dp"
+        android:padding="12dp"
+        android:background="#2A4A2A"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:visibility="visible" />
 
     <RadioGroup
         android:id="@+id/interval_radio_group"

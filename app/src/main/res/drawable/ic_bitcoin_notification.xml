@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Main Bitcoin circle with modern gradient -->
+    <path
+        android:fillColor="#F7931A"
+        android:pathData="M12,1C5.925,1 1,5.925 1,12s4.925,11 11,11s11,-4.925 11,-11S18.075,1 12,1z"/>
+    
+    <!-- Inner highlight ring -->
+    <path
+        android:fillColor="#FFB946"
+        android:pathData="M12,2.2C17.033,2.2 21.133,6.3 21.133,11.333c0,2.511 -1.017,4.786 -2.662,6.431C19.348,16.887 20,15.2 20,13.333c0,-4.418 -3.582,-8 -8,-8s-8,3.582 -8,8c0,1.867 0.652,3.554 1.529,4.431C4.884,16.119 3.867,13.844 3.867,11.333C3.867,6.3 7.967,2.2 12,2.2z"/>
+    
+    <!-- Bitcoin B symbol optimized for small size -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8.5,6.5 L8.5,8.5 L7.5,8.5 L7.5,9.5 L8.5,9.5 L8.5,14.5 L7.5,14.5 L7.5,15.5 L8.5,15.5 L8.5,17.5 L9.5,17.5 L9.5,15.5 L10.5,15.5 L10.5,17.5 L11.5,17.5 L11.5,15.5 L13,15.5 L13,14.5 L12.8,14.5 C14.006,14.5 15,13.506 15,12.3 L15,11.3 C15,10.459 14.626,9.719 14.053,9.237 C14.626,8.755 15,8.015 15,7.174 L15,6.174 C15,4.968 14.006,3.974 12.8,3.974 L11.5,3.974 L11.5,6.5 L10.5,6.5 L10.5,3.974 L9.5,3.974 L9.5,6.5 L8.5,6.5 Z"/>
+    
+    <!-- B letter details with better contrast -->
+    <path
+        android:fillColor="#F7931A"
+        android:pathData="M9.5,9.5 L9.5,11 L12,11 C12.276,11 12.5,10.776 12.5,10.5 L12.5,10 C12.5,9.724 12.276,9.5 12,9.5 L9.5,9.5 Z"/>
+    
+    <path
+        android:fillColor="#F7931A"
+        android:pathData="M9.5,12 L9.5,13.5 L12.3,13.5 C12.576,13.5 12.8,13.276 12.8,13 L12.8,12.5 C12.8,12.224 12.576,12 12.3,12 L9.5,12 Z"/>
+    
+</vector>

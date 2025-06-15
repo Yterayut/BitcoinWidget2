@@ -9,14 +9,19 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.*
+import com.example.bitcoinwidget.performance.PerformanceManager
 
 class RefreshIntervalActivity : Activity() {
 
     private var selectedAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+    private lateinit var performanceManager: PerformanceManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_refresh_interval)
+
+        // Initialize performance manager
+        performanceManager = PerformanceManager(this)
 
         // Get widget ID from intent, or allow selection if called from MainActivity
         selectedAppWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
@@ -30,19 +35,25 @@ class RefreshIntervalActivity : Activity() {
         val cancelButton = findViewById<Button>(R.id.cancel_button)
         val widgetSpinner = findViewById<Spinner>(R.id.widget_selector_spinner)
         val currentIntervalText = findViewById<TextView>(R.id.current_interval_text)
+        val powerStatusText = findViewById<TextView>(R.id.power_status_text) // New view for power status
 
         // Setup widget selector if no specific widget ID provided
         if (selectedAppWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
-            setupWidgetSelector(widgetSpinner, currentIntervalText)
+            setupWidgetSelector(widgetSpinner, currentIntervalText, powerStatusText)
         } else {
             // Hide spinner if specific widget ID provided
             widgetSpinner.visibility = View.GONE
             findViewById<TextView>(R.id.widget_selector_label)?.visibility = View.GONE
-            showCurrentInterval(selectedAppWidgetId, currentIntervalText)
+            showCurrentInterval(selectedAppWidgetId, currentIntervalText, powerStatusText)
         }
 
         // Set default selection to 5 minutes
         radioGroup.check(R.id.interval_5min)
+
+        // Add power status listener for radio group changes
+        radioGroup.setOnCheckedChangeListener { _, _ ->
+            updatePowerSavingPreview(powerStatusText)
+        }
 
         cancelButton.setOnClickListener {
             setResult(RESULT_CANCELED)
@@ -72,7 +83,7 @@ class RefreshIntervalActivity : Activity() {
         }
     }
 
-    private fun setupWidgetSelector(spinner: Spinner, currentIntervalText: TextView) {
+    private fun setupWidgetSelector(spinner: Spinner, currentIntervalText: TextView, powerStatusText: TextView) {
         val widgetIds = getAvailableWidgetIds()
 
         if (widgetIds.isEmpty()) {
@@ -92,7 +103,7 @@ class RefreshIntervalActivity : Activity() {
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (position >= 0 && position < widgetIds.size) {
-                    showCurrentInterval(widgetIds[position], currentIntervalText)
+                    showCurrentInterval(widgetIds[position], currentIntervalText, powerStatusText)
                 }
             }
 
@@ -101,7 +112,7 @@ class RefreshIntervalActivity : Activity() {
 
         // Show current interval for first widget
         if (widgetIds.isNotEmpty()) {
-            showCurrentInterval(widgetIds[0], currentIntervalText)
+            showCurrentInterval(widgetIds[0], currentIntervalText, powerStatusText)
         }
     }
 
@@ -111,7 +122,7 @@ class RefreshIntervalActivity : Activity() {
         return appWidgetManager.getAppWidgetIds(thisWidget).toList()
     }
 
-    private fun showCurrentInterval(appWidgetId: Int, textView: TextView) {
+    private fun showCurrentInterval(appWidgetId: Int, textView: TextView, powerStatusText: TextView) {
         val prefs = getSharedPreferences("WidgetPrefs", Context.MODE_PRIVATE)
         val intervalMillis = prefs.getLong("interval_$appWidgetId", 5 * 60_000L)
 
@@ -125,7 +136,50 @@ class RefreshIntervalActivity : Activity() {
             else -> "${intervalMillis / 60_000} minutes"
         }
 
-        textView.text = "Current interval: $intervalText"
+        textView.text = "Current: $intervalText"
+        
+        // Show power saving status
+        updatePowerStatus(intervalMillis, powerStatusText)
+    }
+
+    private fun updatePowerSavingPreview(powerStatusText: TextView) {
+        val radioGroup = findViewById<RadioGroup>(R.id.interval_radio_group)
+        val selectedIntervalId = radioGroup.checkedRadioButtonId
+        val intervalMillis = when (selectedIntervalId) {
+            R.id.interval_1min -> 60_000L
+            R.id.interval_5min -> 5 * 60_000L
+            R.id.interval_10min -> 10 * 60_000L
+            R.id.interval_20min -> 20 * 60_000L
+            R.id.interval_30min -> 30 * 60_000L
+            R.id.interval_1hour -> 60 * 60_000L
+            else -> 5 * 60_000L
+        }
+        
+        updatePowerStatus(intervalMillis, powerStatusText)
+    }
+
+    private fun updatePowerStatus(userInterval: Long, powerStatusText: TextView) {
+        try {
+            val powerStatus = performanceManager.getPowerSavingStatus()
+            val optimizedInterval = performanceManager.getOptimizedInterval(userInterval, 0)
+            val batterySavings = performanceManager.getEstimatedBatterySavings(userInterval)
+            
+            val statusText = StringBuilder()
+            statusText.append("⚡ $powerStatus\n")
+            
+            if (optimizedInterval > userInterval) {
+                statusText.append("📱 Actual: ${optimizedInterval/1000/60}min (${batterySavings}% longer)")
+            } else {
+                statusText.append("📱 Actual: ${userInterval/1000/60}min (as set)")
+            }
+            
+            powerStatusText.text = statusText.toString()
+            powerStatusText.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            Log.w("RefreshIntervalActivity", "Error updating power status: ${e.message}")
+            powerStatusText.text = "⚡ Power optimization available"
+            powerStatusText.visibility = View.VISIBLE
+        }
     }
 
     private fun applyIntervalSettings(appWidgetId: Int, radioGroup: RadioGroup) {
@@ -158,7 +212,16 @@ class RefreshIntervalActivity : Activity() {
             else -> "${intervalMillis / 60_000} minutes"
         }
 
-        showToast("✅ Refresh interval set to $intervalText for Widget ID: $appWidgetId")
+        // Show power optimization info
+        val optimizedInterval = performanceManager.getOptimizedInterval(intervalMillis, appWidgetId)
+        val message = if (optimizedInterval > intervalMillis) {
+            val savings = ((optimizedInterval.toDouble() / intervalMillis.toDouble()) - 1.0) * 100
+            "✅ Set to $intervalText\n⚡ Will extend to ${optimizedInterval/1000/60}min for power saving (${savings.toInt()}% longer)"
+        } else {
+            "✅ Set to $intervalText\n⚡ Normal interval (optimal conditions)"
+        }
+
+        showToast(message)
         Log.d("RefreshIntervalActivity", "Interval set to $intervalMillis ms for widget $appWidgetId")
 
         // ส่งผลลัพธ์กลับ
@@ -168,6 +231,6 @@ class RefreshIntervalActivity : Activity() {
     }
 
     private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 }

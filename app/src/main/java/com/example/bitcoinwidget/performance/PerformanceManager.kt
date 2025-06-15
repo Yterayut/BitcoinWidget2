@@ -38,10 +38,12 @@ class PerformanceManager(private val context: Context) {
     
     /**
      * Get optimized refresh interval based on current conditions
+     * Always respects user-defined interval as minimum, only extends it for power saving
      */
-    fun getOptimizedInterval(defaultInterval: Long, widgetId: Int): Long {
+    fun getOptimizedInterval(userDefinedInterval: Long, widgetId: Int): Long {
         if (!prefs.getBoolean(KEY_BATTERY_OPTIMIZATION, true)) {
-            return defaultInterval // No optimization, use default
+            Log.d(TAG, "Battery optimization disabled: using user interval ${userDefinedInterval/1000/60}min")
+            return userDefinedInterval // No optimization, use user setting
         }
         
         val batteryLevel = getBatteryLevel()
@@ -49,53 +51,73 @@ class PerformanceManager(private val context: Context) {
         val hasStrongNetwork = hasStrongNetworkConnection()
         val isNightMode = isNightTime()
         
-        Log.d(TAG, "Conditions - Battery: $batteryLevel%, Charging: $isCharging, Network: $hasStrongNetwork, Night: $isNightMode")
+        Log.d(TAG, "User interval: ${userDefinedInterval/1000/60}min | Battery: $batteryLevel%, Charging: $isCharging, Network: $hasStrongNetwork, Night: $isNightMode")
         
-        return when {
-            // Critical battery - minimal updates
+        // Power saving multipliers (never go faster than user setting, only slower)
+        val optimizedInterval = when {
+            // Critical battery - 3x longer intervals
             batteryLevel <= CRITICAL_BATTERY_THRESHOLD && !isCharging -> {
-                Log.d(TAG, "Critical battery mode: using ${NIGHT_MODE_INTERVAL/1000/60}min interval")
-                NIGHT_MODE_INTERVAL
+                val extended = userDefinedInterval * 3
+                Log.d(TAG, "🔴 Critical battery mode: extending interval 3x to ${extended/1000/60}min")
+                extended
             }
             
-            // Low battery - reduced frequency
+            // Low battery - 2x longer intervals
             batteryLevel <= LOW_BATTERY_THRESHOLD && !isCharging -> {
-                Log.d(TAG, "Low battery mode: using ${LOW_BATTERY_INTERVAL/1000/60}min interval")
-                LOW_BATTERY_INTERVAL
+                val extended = userDefinedInterval * 2
+                Log.d(TAG, "🟡 Low battery mode: extending interval 2x to ${extended/1000/60}min")
+                extended
             }
             
-            // Night time - less frequent updates
+            // Night time - 1.5x longer intervals (unless charging)
             isNightMode && !isCharging -> {
-                Log.d(TAG, "Night mode: using ${NIGHT_MODE_INTERVAL/1000/60}min interval")
-                NIGHT_MODE_INTERVAL
+                val extended = (userDefinedInterval * 1.5).toLong()
+                Log.d(TAG, "🌙 Night mode: extending interval 1.5x to ${extended/1000/60}min")
+                extended
             }
             
-            // Poor network connection
+            // Poor network connection - 1.5x longer intervals
             !hasStrongNetwork -> {
-                Log.d(TAG, "Poor network: using ${NO_NETWORK_INTERVAL/1000/60}min interval")
-                NO_NETWORK_INTERVAL
+                val extended = (userDefinedInterval * 1.5).toLong()
+                Log.d(TAG, "📶 Poor network: extending interval 1.5x to ${extended/1000/60}min")
+                extended
             }
             
-            // Charging - normal or faster updates
+            // Charging - use user interval exactly
             isCharging -> {
-                Log.d(TAG, "Device charging: using default ${defaultInterval/1000/60}min interval")
-                defaultInterval
+                Log.d(TAG, "🔌 Device charging: using user interval ${userDefinedInterval/1000/60}min")
+                userDefinedInterval
             }
             
-            // Normal conditions
+            // Normal conditions - use user interval
             else -> {
-                Log.d(TAG, "Normal conditions: using ${NORMAL_INTERVAL/1000/60}min interval")
-                minOf(defaultInterval, NORMAL_INTERVAL)
+                Log.d(TAG, "✅ Normal conditions: using user interval ${userDefinedInterval/1000/60}min")
+                userDefinedInterval
             }
         }
+        
+        // Cap maximum interval at 1 hour for user experience
+        val cappedInterval = minOf(optimizedInterval, 60 * 60 * 1000L)
+        if (cappedInterval != optimizedInterval) {
+            Log.d(TAG, "⚠️ Capping interval at 60min for UX (was ${optimizedInterval/1000/60}min)")
+        }
+        
+        return cappedInterval
     }
     
     /**
-     * Get current battery level percentage
+     * Get current battery level percentage (public method)
      */
-    private fun getBatteryLevel(): Int {
+    fun getBatteryLevel(): Int {
         val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         return batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+    }
+    
+    /**
+     * Get current battery level percentage (private method - keeping for compatibility)
+     */
+    private fun getBatteryLevelPrivate(): Int {
+        return getBatteryLevel()
     }
     
     /**
@@ -204,30 +226,43 @@ class PerformanceManager(private val context: Context) {
     }
     
     /**
-     * Get performance recommendations
+     * Get power saving status description for UI display
      */
-    fun getPerformanceRecommendations(): List<String> {
-        val recommendations = mutableListOf<String>()
+    fun getPowerSavingStatus(): String {
+        if (!prefs.getBoolean(KEY_BATTERY_OPTIMIZATION, true)) {
+            return "⚡ Power optimization disabled"
+        }
+        
         val batteryLevel = getBatteryLevel()
         val isCharging = isDeviceCharging()
+        val hasStrongNetwork = hasStrongNetworkConnection()
+        val isNightMode = isNightTime()
         
-        if (batteryLevel <= LOW_BATTERY_THRESHOLD && !isCharging) {
-            recommendations.add("🔋 Enable battery optimization to extend device life")
+        return when {
+            batteryLevel <= CRITICAL_BATTERY_THRESHOLD && !isCharging -> 
+                "🔴 Critical battery: 3x longer intervals"
+            batteryLevel <= LOW_BATTERY_THRESHOLD && !isCharging -> 
+                "🟡 Low battery: 2x longer intervals"
+            isNightMode && !isCharging -> 
+                "🌙 Night mode: 1.5x longer intervals"
+            !hasStrongNetwork -> 
+                "📶 Poor network: 1.5x longer intervals"
+            isCharging -> 
+                "🔌 Charging: Normal intervals"
+            else -> 
+                "✅ Normal: Using your settings"
         }
+    }
+    
+    /**
+     * Get estimated battery savings percentage
+     */
+    fun getEstimatedBatterySavings(userInterval: Long): Int {
+        if (!prefs.getBoolean(KEY_BATTERY_OPTIMIZATION, true)) return 0
         
-        if (!hasStrongNetworkConnection()) {
-            recommendations.add("📶 Poor network detected - updates may be delayed")
-        }
-        
-        if (isNightTime()) {
-            recommendations.add("🌙 Night mode active - reduced update frequency")
-        }
-        
-        if (recommendations.isEmpty()) {
-            recommendations.add("✅ Performance conditions are optimal")
-        }
-        
-        return recommendations
+        val optimizedInterval = getOptimizedInterval(userInterval, 0)
+        val savingsRatio = (optimizedInterval.toDouble() / userInterval.toDouble()) - 1.0
+        return (savingsRatio * 100).toInt().coerceAtLeast(0)
     }
     
     /**
